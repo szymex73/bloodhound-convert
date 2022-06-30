@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bloodhound-convert',
-    version='1.0.0',
+    version='1.1.0',
     description='Python based Bloodhound data converter from the legacy pre 4.1 format to 4.1+ format',
     author='Szymon Borecki',
     author_email='self@szymex.pw',

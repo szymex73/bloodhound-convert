@@ -27,16 +27,28 @@ def check_valid_file_or_dir(input_path):
     return True
 
 
+def check_valid_v3(filename, data):
+    if 'meta' not in data or 'version' not in data['meta']:
+        print(f'File {filename} contains unknown data, skipping...')
+        return False
+    elif data['meta']['version'] == 3:
+        return True
+    elif data['meta']['version'] == 4:
+        print(f'File {filename} contains v4 data, skipping...')
+        return False
+    else:
+        print(f'File {filename} contains unknown data (possibly v2 data), skipping...')
+        return False
+
+
 def read_from_directory(input_path):
     data = {}
     for filename in os.listdir(input_path):
-        timestamp, datatype = filename.split('.')[0].split('_')
-
-        if 'timestamp' not in data:
-            data['timestamp'] = timestamp
-
         f = open(os.path.join(input_path, filename), 'rb')
-        data[datatype] = json.load(f)
+        json_data = json.load(f)
+        if not check_valid_v3(filename, json_data):
+            continue
+        data[json_data['meta']['type']] = json_data
         f.close()
 
     return data
@@ -47,14 +59,12 @@ def read_from_zipfile(input_path):
     zip = zipfile.ZipFile(input_path)
 
     for filename in zip.namelist():
-        timestamp, datatype = filename.split('.')[0].split('_')
-
-        if 'timestamp' not in data:
-            data['timestamp'] = timestamp
-
         # Even though it's r, zipfile returns bytes on .read()
         f = zip.open(filename, 'r')
-        data[datatype] = json.load(f)
+        json_data = json.load(f)
+        if not check_valid_v3(filename, json_data):
+            continue
+        data[json_data['meta']['type']] = json_data
         f.close()
 
     zip.close()
@@ -64,7 +74,7 @@ def read_from_zipfile(input_path):
 def write_to_zipfile(output_path, data):
     zip = zipfile.ZipFile(output_path, 'w')
     for datatype in data['files']:
-        filename = f'{data["timestamp"]}_{datatype}.json'
+        filename = f'{datatype}.json'
         f = zip.open(filename, 'w')
         f.write(json.dumps(data[datatype]).encode())
         f.close()
@@ -73,8 +83,8 @@ def write_to_zipfile(output_path, data):
 
 def write_to_dir(output_path, data):
     for datatype in data['files']:
-        filename = f'{data["timestamp"]}_{datatype}.json'
-        f = open(os.path.join(output_path, filename), 'wb')
+        filename = f'{datatype}.json'
+        f = open(os.path.join(output_path, filename), 'w')
         json.dump(data[datatype], f)
         f.close()
 
@@ -96,7 +106,7 @@ def main():
         exit(1)
 
     if args.output[-4:] != '.zip' and not os.path.exists(args.output):
-        print(f"Given output path ('{args.input}') is not a zip file or a directory")
+        print(f"Given output path ('{args.output}') is not a zip file or an existing directory")
         exit(1)
 
     if args.input[-4:] == '.zip':
@@ -105,7 +115,6 @@ def main():
         input_data = read_from_directory(args.input)
 
     output_data = {}
-    output_data['timestamp'] = input_data['timestamp']
     output_data['files'] = []
 
     for converter_name, converter_func in converters.items():
@@ -113,6 +122,10 @@ def main():
             print(f'Processing {converter_name}')
             output_data[converter_name] = converter_func(input_data[converter_name])
             output_data['files'].append(converter_name)
+
+    if len(output_data['files']) == 0:
+        print('No data was processed')
+        exit(0)
 
     if args.output[-4:] == '.zip':
         write_to_zipfile(args.output, output_data)

@@ -1,5 +1,5 @@
 # bloodhound-convert
-Python based [Bloodhound](https://github.com/BloodHoundAD/BloodHound) data converter from the legacy pre 4.1 format to 4.1+ format
+Python based [Bloodhound](https://github.com/BloodHoundAD/BloodHound) data converter from the legacy pre 4.1 (v3 format, older formats are not supported (yet?)) format to 4.1+ format
 
 **NOTE**  
 While I've tested this on multiple dumps of mine and they seemed to work fine, I don't expect all the Bloodhound queries to work correctly on this so keep this in mind.
@@ -29,14 +29,13 @@ bloodhound-convert input output
 ```
 Where the arguments are:
 - `input` is either a bloodhound data zip file, or a directory containing bloodhound json data files
-- `output` is either a zip filename for the data to be bundled into, or a directory for the json files to be saved in
+- `output` is either a zip filename for the data to be bundled into, or a directory for the json files to be saved in (NOTE: the directory has to exist)
 
 ## Why?
 As I go back to previous bloodhound dumps from various ctf boxes and/or labs I've done I have to switch between the new version and the pre 4.1 version because of the data format change. This is both tedious and annoying, especially since the old version stopped working on my machine :).  
 So to fix this I made this to convert my old bloodhound dumps into the new format so I can use a single version until the format changes again.
 
 ## TODO?
-Maybe add some actual json file checks as currently this just verifies the json files by the extension.  
 Maybe make this into an actual ingestor so it pushes data straight into neo4j? Most likely not but who knows.  
 Even though Bloodhound ingests the data fine, it seems to quietly throw errors when importing the computer objects into the DB, doesn't seem to cause problems but might be worth investigating.
 
